@@ -1,174 +1,96 @@
-\#Enterprise Network Segmentation with pfSense + Proxmox
-
-
+## Enterprise Network Segmentation with pfSense + Proxmox
 
 A production-ready three-zone VLAN architecture implementing defense-in-depth security principles with isolated network segments for User, Server, and DMZ workloads.
 
+---
 
+## Network Architecture Diagram
+
+```
+                              INTERNET
+                                 │
+                                 │
+                    ┌────────────▼────────────┐
+                    │   Upstream Router       │
+                    │   192.168.0.1           │
+                    └────────────┬────────────┘
+                                 │
+                         ┌───────▼───────┐
+                         │   vmbr0 (WAN) │
+                         └───────┬───────┘
+                                 │
+                    ┌────────────▼─────────────┐
+                    │   pfSense Firewall VM    │
+                    │   WAN: 192.168.0.193     │
+                    │   LAN: vtnet1 (trunk)    │
+                    └────────────┬─────────────┘
+                                 │
+                         ┌───────▼───────┐
+                         │ vmbr1 (LAN)   │
+                         │ VLAN-aware    │
+                         └───┬───┬───┬───┘
+                             │   │   │
+                    ┌────────┘   │   └────────┐
+                    │            │            │
+            ┌───────▼─────┐ ┌───▼──────┐ ┌──▼───────┐
+            │  VLAN 10    │ │ VLAN 20  │ │ VLAN 30  │
+            │  USER       │ │ SERVER   │ │  DMZ     │
+            │ .10.0/24    │ │ .20.0/24 │ │ .30.0/24 │
+            └──────┬──────┘ └────┬─────┘ └────┬─────┘
+                   │             │            │
+          ┌────────┴────────┐    │    ┌───────┴────────┐
+          │                 │    │    │                │
+    ┌─────▼─────┐  ┌────────▼────▼────▼─────┐  ┌──────▼──────┐
+    │ lxc-user  │  │  lxc-db  lxc-monitor   │  │  lxc-nginx  │
+    │   .10.50  │  │  .20.50     .20.20     │  │   .30.50    │
+    └───────────┘  └────────────────────────┘  └─────────────┘
+```
 
 ---
 
+## 1. VLAN-Aware Bridge Configuration
 
+**Achievement:** Enabled 802.1Q VLAN tagging on Proxmox's vmbr1 bridge to support multiple isolated network segments on a single physical interface.
 
-\## Network Architecture Diagram
+**What we did:**
 
-```
+- Configured `vmbr1` with `bridge-vlan-aware yes` parameter
 
-&nbsp;                             INTERNET
+- Allowed VLAN IDs 2-4094 for flexible VLAN assignment
 
-&nbsp;                                │
+- This enables LXC containers to be tagged into specific VLANs
 
-&nbsp;                                │
-
-&nbsp;                   ┌────────────▼────────────┐
-
-&nbsp;                   │   Upstream Router       │
-
-&nbsp;                   │   192.168.0.1           │
-
-&nbsp;                   └────────────┬────────────┘
-
-&nbsp;                                │
-
-&nbsp;                        ┌───────▼───────┐
-
-&nbsp;                        │   vmbr0 (WAN) │
-
-&nbsp;                        └───────┬───────┘
-
-&nbsp;                                │
-
-&nbsp;                   ┌────────────▼─────────────┐
-
-&nbsp;                   │   pfSense Firewall VM    │
-
-&nbsp;                   │   WAN: 192.168.0.193     │
-
-&nbsp;                   │   LAN: vtnet1 (trunk)    │
-
-&nbsp;                   └────────────┬─────────────┘
-
-&nbsp;                                │
-
-&nbsp;                        ┌───────▼───────┐
-
-&nbsp;                        │ vmbr1 (LAN)   │
-
-&nbsp;                        │ VLAN-aware    │
-
-&nbsp;                        └───┬───┬───┬───┘
-
-&nbsp;                            │   │   │
-
-&nbsp;                   ┌────────┘   │   └────────┐
-
-&nbsp;                   │            │            │
-
-&nbsp;           ┌───────▼─────┐ ┌───▼──────┐ ┌──▼───────┐
-
-&nbsp;           │  VLAN 10    │ │ VLAN 20  │ │ VLAN 30  │
-
-&nbsp;           │  USER       │ │ SERVER   │ │  DMZ     │
-
-&nbsp;           │ .10.0/24    │ │ .20.0/24 │ │ .30.0/24 │
-
-&nbsp;           └──────┬──────┘ └────┬─────┘ └────┬─────┘
-
-&nbsp;                  │             │            │
-
-&nbsp;         ┌────────┴────────┐    │    ┌───────┴────────┐
-
-&nbsp;         │                 │    │    │                │
-
-&nbsp;   ┌─────▼─────┐  ┌────────▼────▼────▼─────┐  ┌──────▼──────┐
-
-&nbsp;   │ lxc-user  │  │  lxc-db  lxc-monitor   │  │  lxc-nginx  │
-
-&nbsp;   │   .10.50  │  │  .20.50     .20.20     │  │   .30.50    │
-
-&nbsp;   └───────────┘  └────────────────────────┘  └─────────────┘
-
-```
-
-
-
----
-
-
-
-\## 1. VLAN-Aware Bridge Configuration
-
-
-
-\*\*Achievement:\*\* Enabled 802.1Q VLAN tagging on Proxmox's vmbr1 bridge to support multiple isolated network segments on a single physical interface.
-
-
-
-\*\*What we did:\*\*
-
-\- Configured `vmbr1` with `bridge-vlan-aware yes` parameter
-
-\- Allowed VLAN IDs 2-4094 for flexible VLAN assignment
-
-\- This enables LXC containers to be tagged into specific VLANs
-
-
-
-\*\*Technical Details:\*\*
+**Technical Details:**
 
 ```bash
-
-\# /etc/network/interfaces on Proxmox host
-
+# /etc/network/interfaces on Proxmox host
 auto vmbr1
-
 iface vmbr1 inet static
-
-&nbsp;   address  10.0.1.10/24
-
-&nbsp;   bridge-ports  enp3s0
-
-&nbsp;   bridge-stp    off
-
-&nbsp;   bridge-fd     0
-
-&nbsp;   bridge-vlan-aware  yes
-
-&nbsp;   bridge-vids   2-4094
-
+    address  10.0.1.10/24
+    bridge-ports  enp3s0
+    bridge-stp    off
+    bridge-fd     0
+    bridge-vlan-aware  yes
+    bridge-vids   2-4094
 ```
 
-
-
-!\[Screenshot: Proxmox VLAN-Aware Bridge Configuration](screenshots/01-proxmox-vmbr1-vlan-aware.png)
-
-
+![Screenshot: Proxmox VLAN-Aware Bridge Configuration](screenshots/01-proxmox-vmbr1-vlan-aware.png)
 
 ---
 
+## 2. pfSense VLAN Sub-Interfaces
 
+**Achievement:** Created three VLAN sub-interfaces on pfSense's LAN trunk (vtnet1) to act as gateways for each isolated zone.
 
-\## 2. pfSense VLAN Sub-Interfaces
+**What we did:**
 
+- Created VLAN 10, 20, 30 on parent interface vtnet1
 
+- Assigned static IPs to each VLAN sub-interface
 
-\*\*Achievement:\*\* Created three VLAN sub-interfaces on pfSense's LAN trunk (vtnet1) to act as gateways for each isolated zone.
+- Enabled interfaces to route traffic between zones
 
-
-
-\*\*What we did:\*\*
-
-\- Created VLAN 10, 20, 30 on parent interface vtnet1
-
-\- Assigned static IPs to each VLAN sub-interface
-
-\- Enabled interfaces to route traffic between zones
-
-
-
-\*\*VLAN Assignment:\*\*
-
-
+**VLAN Assignment:**
 
 | VLAN ID | Interface | IP Address     | Network Segment | Purpose |
 
@@ -180,41 +102,25 @@ iface vmbr1 inet static
 
 | 30      | DMZ       | 192.168.30.1   | 192.168.30.0/24 | Public-facing services (web, mail) |
 
+![Screenshot: pfSense VLAN Configuration](screenshots/02-pfsense-vlan-creation.png)
 
-
-!\[Screenshot: pfSense VLAN Configuration](screenshots/02-pfsense-vlan-creation.png)
-
-
-
-!\[Screenshot: pfSense Interface Assignments](screenshots/03-pfsense-interface-assignments.png)
-
-
+![Screenshot: pfSense Interface Assignments](screenshots/03-pfsense-interface-assignments.png)
 
 ---
 
+## 3. DHCP Server per VLAN
 
+**Achievement:** Configured isolated DHCP pools for each VLAN with zone-specific DNS and gateway settings.
 
-\## 3. DHCP Server per VLAN
+**What we did:**
 
+- Enabled DHCP server on USER, SERVER, and DMZ interfaces
 
+- Assigned non-overlapping IP ranges per zone
 
-\*\*Achievement:\*\* Configured isolated DHCP pools for each VLAN with zone-specific DNS and gateway settings.
+- Configured each DHCP scope to hand out the correct gateway and DNS server
 
-
-
-\*\*What we did:\*\*
-
-\- Enabled DHCP server on USER, SERVER, and DMZ interfaces
-
-\- Assigned non-overlapping IP ranges per zone
-
-\- Configured each DHCP scope to hand out the correct gateway and DNS server
-
-
-
-\*\*DHCP Configuration:\*\*
-
-
+**DHCP Configuration:**
 
 | VLAN | Range Start    | Range End      | Gateway       | DNS Server    |
 
@@ -226,37 +132,23 @@ iface vmbr1 inet static
 
 | 30   | 192.168.30.100 | 192.168.30.150 | 192.168.30.1  | 192.168.30.1  |
 
-
-
-!\[Screenshot: pfSense DHCP Server Configuration](screenshots/04-pfsense-dhcp-server.png)
-
-
+![Screenshot: pfSense DHCP Server Configuration](screenshots/04-pfsense-dhcp-server.png)
 
 ---
 
+## 4. Firewall Aliases for Rule Readability
 
+**Achievement:** Created reusable aliases for networks, ports, and hosts to make firewall rules maintainable and self-documenting.
 
-\## 4. Firewall Aliases for Rule Readability
+**What we did:**
 
+- Defined network aliases (RFC1918\_PRIVATE)
 
+- Defined port group aliases (WEB\_PORTS, DNS\_NTP\_PORTS, DB\_PORTS)
 
-\*\*Achievement:\*\* Created reusable aliases for networks, ports, and hosts to make firewall rules maintainable and self-documenting.
+- Defined host aliases for critical infrastructure (SYSLOG\_SERVER, MONITORING\_SERVER)
 
-
-
-\*\*What we did:\*\*
-
-\- Defined network aliases (RFC1918\_PRIVATE)
-
-\- Defined port group aliases (WEB\_PORTS, DNS\_NTP\_PORTS, DB\_PORTS)
-
-\- Defined host aliases for critical infrastructure (SYSLOG\_SERVER, MONITORING\_SERVER)
-
-
-
-\*\*Alias Examples:\*\*
-
-
+**Alias Examples:**
 
 | Alias Name         | Type    | Value(s)                                      |
 
@@ -274,37 +166,23 @@ iface vmbr1 inet static
 
 | DMZ\_WEB            | Host    | 192.168.30.50                                 |
 
-
-
-!\[Screenshot: pfSense Firewall Aliases](screenshots/05-pfsense-aliases.png)
-
-
+![Screenshot: pfSense Firewall Aliases](screenshots/05-pfsense-aliases.png)
 
 ---
 
+## 5. NAT Configuration (Outbound + Port Forwarding)
 
+**Achievement:** Configured manual outbound NAT for all VLANs and port-forwarding rules to expose DMZ services to the internet.
 
-\## 5. NAT Configuration (Outbound + Port Forwarding)
+**What we did:**
 
+- Set outbound NAT to Manual mode
 
+- Created masquerade rules for each VLAN subnet → WAN
 
-\*\*Achievement:\*\* Configured manual outbound NAT for all VLANs and port-forwarding rules to expose DMZ services to the internet.
+- Configured port forwards from WAN to DMZ services (HTTP, HTTPS, SMTP)
 
-
-
-\*\*What we did:\*\*
-
-\- Set outbound NAT to Manual mode
-
-\- Created masquerade rules for each VLAN subnet → WAN
-
-\- Configured port forwards from WAN to DMZ services (HTTP, HTTPS, SMTP)
-
-
-
-\*\*Outbound NAT Rules:\*\*
-
-
+**Outbound NAT Rules:**
 
 | Source Network    | Translation         | Description              |
 
@@ -316,11 +194,7 @@ iface vmbr1 inet static
 
 | 192.168.30.0/24   | WAN Interface (SNAT)| DMZ VLAN updates         |
 
-
-
-\*\*Port Forward Rules:\*\*
-
-
+**Port Forward Rules:**
 
 | WAN Port | Protocol | Destination IP   | Dest Port | Service      |
 
@@ -332,41 +206,25 @@ iface vmbr1 inet static
 
 | 25       | TCP      | 192.168.30.60    | 25        | SMTP → mail  |
 
+![Screenshot: pfSense Outbound NAT](screenshots/06-pfsense-outbound-nat.png)
 
-
-!\[Screenshot: pfSense Outbound NAT](screenshots/06-pfsense-outbound-nat.png)
-
-
-
-!\[Screenshot: pfSense Port Forwards](screenshots/07-pfsense-port-forwards.png)
-
-
+![Screenshot: pfSense Port Forwards](screenshots/07-pfsense-port-forwards.png)
 
 ---
 
+## 6. Floating Firewall Rules (Global Security Policy)
 
+**Achievement:** Implemented high-priority floating rules that enforce security boundaries across all interfaces before per-interface rules are evaluated.
 
-\## 6. Floating Firewall Rules (Global Security Policy)
+**What we did:**
 
+- Created floating rules with "Quick" flag enabled (match immediately, skip further processing)
 
+- Blocked DMZ from initiating connections to USER and SERVER zones
 
-\*\*Achievement:\*\* Implemented high-priority floating rules that enforce security boundaries across all interfaces before per-interface rules are evaluated.
+- Prevented loopback spoofing attacks
 
-
-
-\*\*What we did:\*\*
-
-\- Created floating rules with "Quick" flag enabled (match immediately, skip further processing)
-
-\- Blocked DMZ from initiating connections to USER and SERVER zones
-
-\- Prevented loopback spoofing attacks
-
-
-
-\*\*Floating Rules:\*\*
-
-
+**Floating Rules:**
 
 | # | Action | Source      | Destination  | Description                                    |
 
@@ -378,49 +236,33 @@ iface vmbr1 inet static
 
 | F03 | BLOCK | any         | 127.0.0.0/8     | Block loopback spoofing (anti-spoofing)        |
 
-
-
 All rules have:
 
-\- \*\*Quick:\*\* Enabled (bypass per-interface rules)
+- **Quick:** Enabled (bypass per-interface rules)
 
-\- \*\*Log:\*\* Enabled (audit trail)
+- **Log:** Enabled (audit trail)
 
-\- \*\*Direction:\*\* Any
+- **Direction:** Any
 
-
-
-!\[Screenshot: pfSense Floating Rules](screenshots/08-pfsense-floating-rules.png)
-
-
+![Screenshot: pfSense Floating Rules](screenshots/08-pfsense-floating-rules.png)
 
 ---
 
+## 7. USER VLAN Firewall Rules (192.168.10.0/24)
 
+**Achievement:** Implemented least-privilege access control for untrusted user workloads with strict egress filtering and lateral movement prevention.
 
-\## 7. USER VLAN Firewall Rules (192.168.10.0/24)
+**Security Principles Applied:**
 
+- Default-deny posture (explicit allow only)
 
+- Internet access restricted to web protocols only
 
-\*\*Achievement:\*\* Implemented least-privilege access control for untrusted user workloads with strict egress filtering and lateral movement prevention.
+- No direct access to SERVER zone
 
+- Intra-VLAN lateral movement blocked
 
-
-\*\*Security Principles Applied:\*\*
-
-\- Default-deny posture (explicit allow only)
-
-\- Internet access restricted to web protocols only
-
-\- No direct access to SERVER zone
-
-\- Intra-VLAN lateral movement blocked
-
-
-
-\*\*USER VLAN Rules:\*\*
-
-
+**USER VLAN Rules:**
 
 | # | Action | Protocol | Source    | Destination              | Port        | Purpose                                    |
 
@@ -440,43 +282,27 @@ All rules have:
 
 | U07| BLOCK | any      | any       | any                      | any         | Default deny catch-all (LOG)               |
 
+**Rules are processed top-to-bottom. Order matters.**
 
-
-\*\*Rules are processed top-to-bottom. Order matters.\*\*
-
-
-
-!\[Screenshot: pfSense USER VLAN Rules](screenshots/09-pfsense-user-rules.png)
-
-
+![Screenshot: pfSense USER VLAN Rules](screenshots/09-pfsense-user-rules.png)
 
 ---
 
+## 8. SERVER VLAN Firewall Rules (192.168.20.0/24)
 
+**Achievement:** Secured internal services zone with egress-only internet access and role-based access control for monitoring and logging infrastructure.
 
-\## 8. SERVER VLAN Firewall Rules (192.168.20.0/24)
+**Security Principles Applied:**
 
+- Servers cannot initiate connections to user endpoints
 
+- Internet access limited to OS/package updates only
 
-\*\*Achievement:\*\* Secured internal services zone with egress-only internet access and role-based access control for monitoring and logging infrastructure.
+- Special allowances for SIEM (syslog) and monitoring servers
 
+- Micro-segmentation within the zone (servers cannot talk to each other)
 
-
-\*\*Security Principles Applied:\*\*
-
-\- Servers cannot initiate connections to user endpoints
-
-\- Internet access limited to OS/package updates only
-
-\- Special allowances for SIEM (syslog) and monitoring servers
-
-\- Micro-segmentation within the zone (servers cannot talk to each other)
-
-
-
-\*\*SERVER VLAN Rules:\*\*
-
-
+**SERVER VLAN Rules:**
 
 | # | Action | Protocol | Source           | Destination              | Port     | Purpose                                      |
 
@@ -496,39 +322,25 @@ All rules have:
 
 | S07| BLOCK | any      | any              | any                      | any      | Default deny catch-all (LOG)                 |
 
-
-
-!\[Screenshot: pfSense SERVER VLAN Rules](screenshots/10-pfsense-server-rules.png)
-
-
+![Screenshot: pfSense SERVER VLAN Rules](screenshots/10-pfsense-server-rules.png)
 
 ---
 
+## 9. DMZ VLAN Firewall Rules (192.168.30.0/24)
 
+**Achievement:** Isolated public-facing services with strict egress controls and one-way logging to internal SIEM.
 
-\## 9. DMZ VLAN Firewall Rules (192.168.30.0/24)
+**Security Principles Applied:**
 
+- DMZ cannot initiate connections to USER or SERVER (enforced by Floating rules + per-interface rules for defense-in-depth)
 
+- Internet access limited to updates only
 
-\*\*Achievement:\*\* Isolated public-facing services with strict egress controls and one-way logging to internal SIEM.
+- One-way syslog shipping to SERVER zone (no return path)
 
+- Intra-DMZ isolation (container-to-container access blocked)
 
-
-\*\*Security Principles Applied:\*\*
-
-\- DMZ cannot initiate connections to USER or SERVER (enforced by Floating rules + per-interface rules for defense-in-depth)
-
-\- Internet access limited to updates only
-
-\- One-way syslog shipping to SERVER zone (no return path)
-
-\- Intra-DMZ isolation (container-to-container access blocked)
-
-
-
-\*\*DMZ VLAN Rules:\*\*
-
-
+**DMZ VLAN Rules:**
 
 | # | Action | Protocol | Source     | Destination              | Port    | Purpose                                        |
 
@@ -548,143 +360,93 @@ All rules have:
 
 | D07| BLOCK | any      | any        | any                      | any     | Default deny catch-all (LOG)                   |
 
+**Note:** Rules D04 and D05 are redundant with Floating rules F01 and F02, but included as defense-in-depth in case floating rules are accidentally disabled.
 
-
-\*\*Note:\*\* Rules D04 and D05 are redundant with Floating rules F01 and F02, but included as defense-in-depth in case floating rules are accidentally disabled.
-
-
-
-!\[Screenshot: pfSense DMZ VLAN Rules](screenshots/11-pfsense-dmz-rules.png)
-
-
+![Screenshot: pfSense DMZ VLAN Rules](screenshots/11-pfsense-dmz-rules.png)
 
 ---
 
+## 10. DNS Resolver Configuration (Split DNS)
 
+**Achievement:** Configured Unbound DNS resolver with access control lists to prevent DNS queries from unauthorized networks and cross-zone DNS leakage.
 
-\## 10. DNS Resolver Configuration (Split DNS)
+**What we did:**
 
+- Enabled DNS resolver on USER, SERVER, DMZ interfaces only (not WAN)
 
+- Configured custom access-control rules to refuse queries from untrusted sources
 
-\*\*Achievement:\*\* Configured Unbound DNS resolver with access control lists to prevent DNS queries from unauthorized networks and cross-zone DNS leakage.
+- Enabled DNSSEC for DNS query validation
 
+- Rate-limited DNS queries to prevent amplification attacks
 
-
-\*\*What we did:\*\*
-
-\- Enabled DNS resolver on USER, SERVER, DMZ interfaces only (not WAN)
-
-\- Configured custom access-control rules to refuse queries from untrusted sources
-
-\- Enabled DNSSEC for DNS query validation
-
-\- Rate-limited DNS queries to prevent amplification attacks
-
-
-
-\*\*DNS Access Control Configuration:\*\*
+**DNS Access Control Configuration:**
 
 ```
-
 access-control: 0.0.0.0/0 refuse
-
 access-control: 192.168.10.0/24 allow
-
 access-control: 192.168.20.0/24 allow
-
 access-control: 192.168.30.0/24 allow
-
 access-control: 10.0.1.0/24 allow
-
 access-control: 127.0.0.0/8 allow
-
 ip-ratelimit: 100
-
 ```
 
+**This prevents:**
 
+- Open DNS resolver abuse (internet hosts cannot query our DNS)
 
-\*\*This prevents:\*\*
+- Cross-zone DNS poisoning
 
-\- Open DNS resolver abuse (internet hosts cannot query our DNS)
+- DNS amplification DDoS attacks
 
-\- Cross-zone DNS poisoning
-
-\- DNS amplification DDoS attacks
-
-
-
-!\[Screenshot: pfSense DNS Resolver Configuration](screenshots/12-pfsense-dns-resolver.png)
-
-
+![Screenshot: pfSense DNS Resolver Configuration](screenshots/12-pfsense-dns-resolver.png)
 
 ---
 
+## 11. Remote Syslog (Centralized Logging)
 
+**Achievement:** Configured pfSense to forward all firewall logs to a central syslog/SIEM server in the SERVER zone for security monitoring and incident response.
 
-\## 11. Remote Syslog (Centralized Logging)
+**What we did:**
 
+- Enabled remote logging to 192.168.20.10:514 (SYSLOG\_SERVER)
 
+- Configured firewall event logging (all allow/deny decisions)
 
-\*\*Achievement:\*\* Configured pfSense to forward all firewall logs to a central syslog/SIEM server in the SERVER zone for security monitoring and incident response.
+- Created firewall rule S03 to allow syslog server to receive logs from all zones
 
+**What gets logged:**
 
+- All blocked traffic (U04-U07, S05-S07, D04-D07)
 
-\*\*What we did:\*\*
+- Port forward hits
 
-\- Enabled remote logging to 192.168.20.10:514 (SYSLOG\_SERVER)
+- NAT translations
 
-\- Configured firewall event logging (all allow/deny decisions)
+- DHCP leases
 
-\- Created firewall rule S03 to allow syslog server to receive logs from all zones
+- Authentication events
 
+**Benefits:**
 
+- Centralized security event correlation
 
-\*\*What gets logged:\*\*
+- Historical audit trail
 
-\- All blocked traffic (U04-U07, S05-S07, D04-D07)
+- Alerting on suspicious activity (e.g., repeated blocks from same source)
 
-\- Port forward hits
+- Compliance requirements (log retention)
 
-\- NAT translations
-
-\- DHCP leases
-
-\- Authentication events
-
-
-
-\*\*Benefits:\*\*
-
-\- Centralized security event correlation
-
-\- Historical audit trail
-
-\- Alerting on suspicious activity (e.g., repeated blocks from same source)
-
-\- Compliance requirements (log retention)
-
-
-
-!\[Screenshot: pfSense Remote Syslog Configuration](screenshots/13-pfsense-remote-syslog.png)
-
-
+![Screenshot: pfSense Remote Syslog Configuration](screenshots/13-pfsense-remote-syslog.png)
 
 ---
 
+## 12. LXC Container Deployment in VLANs
 
+**Achievement:** Successfully deployed LXC containers across three isolated VLANs with proper network segmentation enforced at the Proxmox bridge level.
 
-\## 12. LXC Container Deployment in VLANs
-
-
-
-\*\*Achievement:\*\* Successfully deployed LXC containers across three isolated VLANs with proper network segmentation enforced at the Proxmox bridge level.
-
-
-
-\*\*Container Configuration:\*\*
-
-
+**Container Configuration:**
 
 | Container Name | VLAN Tag | IP Address     | Gateway       | Purpose                  |
 
@@ -702,401 +464,231 @@ ip-ratelimit: 100
 
 | lxc-mail       | 30       | 192.168.30.60  | 192.168.30.1  | Mail relay (public)      |
 
-
-
-\*\*Proxmox Network Configuration Example (lxc-user-01):\*\*
+**Proxmox Network Configuration Example (lxc-user-01):**
 
 ```
-
 net0: name=eth0,bridge=vmbr1,tag=10,ip=192.168.10.50/24,gw=192.168.10.1,firewall=1
-
 nameserver: 192.168.10.1
-
 ```
 
+![Screenshot: Proxmox LXC Network Configuration](screenshots/14-proxmox-lxc-network-config.png)
 
-
-!\[Screenshot: Proxmox LXC Network Configuration](screenshots/14-proxmox-lxc-network-config.png)
-
-
-
-!\[Screenshot: LXC Containers Running in VLANs](screenshots/15-proxmox-lxc-list.png)
-
-
+![Screenshot: LXC Containers Running in VLANs](screenshots/15-proxmox-lxc-list.png)
 
 ---
 
+## 13. Network Connectivity Verification
 
+**Achievement:** Validated that VLAN segmentation, firewall rules, DNS resolution, and internet access are functioning as designed.
 
-\## 13. Network Connectivity Verification
+**Test Results:**
 
-
-
-\*\*Achievement:\*\* Validated that VLAN segmentation, firewall rules, DNS resolution, and internet access are functioning as designed.
-
-
-
-\*\*Test Results:\*\*
-
-
-
-\### USER VLAN (192.168.10.50) Tests:
+### USER VLAN (192.168.10.50) Tests:
 
 ```bash
-
-\# ✅ PASS: DNS resolution via pfSense
-
+# ✅ PASS: DNS resolution via pfSense
 dig @192.168.10.1 google.com
-
-\# Result: status: NOERROR, ANSWER SECTION shows IP
-
-
-
-\# ✅ PASS: Internet HTTP/HTTPS access
-
+# Result: status: NOERROR, ANSWER SECTION shows IP
+# ✅ PASS: Internet HTTP/HTTPS access
 curl -I https://google.com
-
-\# Result: HTTP/2 200
-
-
-
-\# ❌ BLOCKED: Access to SERVER zone
-
+# Result: HTTP/2 200
+# ❌ BLOCKED: Access to SERVER zone
 ping 192.168.20.10
-
-\# Result: 100% packet loss (blocked by U04)
-
-
-
-\# ❌ BLOCKED: SSH to DMZ
-
+# Result: 100% packet loss (blocked by U04)
+# ❌ BLOCKED: SSH to DMZ
 ssh 192.168.30.50
-
-\# Result: Connection timeout (blocked by U06)
-
+# Result: Connection timeout (blocked by U06)
 ```
 
-
-
-\### SERVER VLAN Tests:
+### SERVER VLAN Tests:
 
 ```bash
-
-\# ✅ PASS: Internet access for updates
-
+# ✅ PASS: Internet access for updates
 curl -I https://ubuntu.com
-
-\# Result: HTTP/2 200
-
-
-
-\# ❌ BLOCKED: Access to USER zone
-
+# Result: HTTP/2 200
+# ❌ BLOCKED: Access to USER zone
 ping 192.168.10.50
-
-\# Result: Blocked by S05
-
+# Result: Blocked by S05
 ```
 
-
-
-\### DMZ VLAN Tests:
+### DMZ VLAN Tests:
 
 ```bash
-
-\# ✅ PASS: Log shipping to SIEM
-
+# ✅ PASS: Log shipping to SIEM
 logger -n 192.168.20.10 -P 514 "Test syslog message"
-
-\# Result: Message received at syslog server
-
-
-
-\# ❌ BLOCKED: Access to USER zone
-
+# Result: Message received at syslog server
+# ❌ BLOCKED: Access to USER zone
 ping 192.168.10.50
-
-\# Result: Blocked by F01 (floating rule)
-
-
-
-\# ❌ BLOCKED: Access to SERVER zone
-
+# Result: Blocked by F01 (floating rule)
+# ❌ BLOCKED: Access to SERVER zone
 ping 192.168.20.10
-
-\# Result: Blocked by F02 (floating rule)
-
+# Result: Blocked by F02 (floating rule)
 ```
 
+![Screenshot: USER VLAN Connectivity Test](screenshots/16-user-vlan-test.png)
 
-
-!\[Screenshot: USER VLAN Connectivity Test](screenshots/16-user-vlan-test.png)
-
-
-
-!\[Screenshot: Firewall Logs Showing Blocked Traffic](screenshots/17-pfsense-firewall-logs.png)
-
-
+![Screenshot: Firewall Logs Showing Blocked Traffic](screenshots/17-pfsense-firewall-logs.png)
 
 ---
 
+## Security Architecture Summary
 
+### What We Achieved:
 
-\## Security Architecture Summary
+#### 1. **Zero Trust Network Segmentation**
 
+- Three isolated trust zones with explicit deny-all policies
 
+- Traffic between zones requires explicit firewall rule approval
 
-\### What We Achieved:
+- Compromised zone cannot pivot to others
 
+#### 2. **Defense-in-Depth**
 
+- Multiple layers: VLAN isolation → Floating rules → Per-interface rules → Intra-zone blocks
 
-\#### 1. \*\*Zero Trust Network Segmentation\*\*
+- Redundant controls (F01/F02 + D04/D05 for DMZ isolation)
 
-\- Three isolated trust zones with explicit deny-all policies
+- Logging at every enforcement point
 
-\- Traffic between zones requires explicit firewall rule approval
+#### 3. **Least Privilege Access**
 
-\- Compromised zone cannot pivot to others
+- Users can only access internet + DMZ web apps (not databases, not SSH)
 
+- Servers can only update from internet (not browse freely)
 
+- DMZ can only log to SIEM (no lateral movement)
 
-\#### 2. \*\*Defense-in-Depth\*\*
+#### 4. **Lateral Movement Prevention**
 
-\- Multiple layers: VLAN isolation → Floating rules → Per-interface rules → Intra-zone blocks
+- Intra-VLAN traffic blocked (U05, S06, D06)
 
-\- Redundant controls (F01/F02 + D04/D05 for DMZ isolation)
+- Users cannot pivot to other user containers
 
-\- Logging at every enforcement point
+- DMZ breach cannot spread to USER or SERVER zones
 
+#### 5. **Centralized Visibility**
 
+- All firewall decisions logged
 
-\#### 3. \*\*Least Privilege Access\*\*
+- Central SIEM receives logs from pfSense + all zones
 
-\- Users can only access internet + DMZ web apps (not databases, not SSH)
-
-\- Servers can only update from internet (not browse freely)
-
-\- DMZ can only log to SIEM (no lateral movement)
-
-
-
-\#### 4. \*\*Lateral Movement Prevention\*\*
-
-\- Intra-VLAN traffic blocked (U05, S06, D06)
-
-\- Users cannot pivot to other user containers
-
-\- DMZ breach cannot spread to USER or SERVER zones
-
-
-
-\#### 5. \*\*Centralized Visibility\*\*
-
-\- All firewall decisions logged
-
-\- Central SIEM receives logs from pfSense + all zones
-
-\- Security team has single pane of glass for monitoring
-
-
+- Security team has single pane of glass for monitoring
 
 ---
 
+## Technology Stack
 
+- **Hypervisor:** Proxmox VE 8.x
 
-\## Technology Stack
+- **Firewall/Router:** pfSense 2.7+ (running as VM)
 
+- **Containers:** LXC (Ubuntu 22.04/24.04)
 
+- **Network:** 802.1Q VLANs on VLAN-aware Linux bridge
 
-\- \*\*Hypervisor:\*\* Proxmox VE 8.x
+- **DNS:** Unbound resolver with split-horizon DNS
 
-\- \*\*Firewall/Router:\*\* pfSense 2.7+ (running as VM)
-
-\- \*\*Containers:\*\* LXC (Ubuntu 22.04/24.04)
-
-\- \*\*Network:\*\* 802.1Q VLANs on VLAN-aware Linux bridge
-
-\- \*\*DNS:\*\* Unbound resolver with split-horizon DNS
-
-\- \*\*Logging:\*\* Centralized rsyslog/syslog-ng
-
-
+- **Logging:** Centralized rsyslog/syslog-ng
 
 ---
 
-
-
-\## File Structure for Screenshots
+## File Structure for Screenshots
 
 ```
-
 screenshots/
-
 ├── 01-proxmox-vmbr1-vlan-aware.png
-
 ├── 02-pfsense-vlan-creation.png
-
 ├── 03-pfsense-interface-assignments.png
-
 ├── 04-pfsense-dhcp-server.png
-
 ├── 05-pfsense-aliases.png
-
 ├── 06-pfsense-outbound-nat.png
-
 ├── 07-pfsense-port-forwards.png
-
 ├── 08-pfsense-floating-rules.png
-
 ├── 09-pfsense-user-rules.png
-
 ├── 10-pfsense-server-rules.png
-
 ├── 11-pfsense-dmz-rules.png
-
 ├── 12-pfsense-dns-resolver.png
-
 ├── 13-pfsense-remote-syslog.png
-
 ├── 14-proxmox-lxc-network-config.png
-
 ├── 15-proxmox-lxc-list.png
-
 ├── 16-user-vlan-test.png
-
 └── 17-pfsense-firewall-logs.png
-
 ```
-
-
 
 ---
 
+## Network Traffic Flow Examples
 
-
-\## Network Traffic Flow Examples
-
-
-
-\### Example 1: User browsing the internet
+### Example 1: User browsing the internet
 
 ```
-
 User LXC (192.168.10.50) → pfSense USER interface (192.168.10.1)
-
 → Rule U02 evaluates: TCP to non-RFC1918 port 443 → ALLOW
-
 → Outbound NAT translates 192.168.10.50 → 192.168.0.193 (WAN IP)
-
 → Traffic exits via WAN to internet
-
 → Return traffic: Stateful firewall allows established connection back
-
 ```
 
-
-
-\### Example 2: User trying to access internal database (blocked)
+### Example 2: User trying to access internal database (blocked)
 
 ```
-
 User LXC (192.168.10.50) → Attempts connection to 192.168.20.50:3306
-
 → Rule U04 evaluates: Destination = SERVER net → BLOCK + LOG
-
 → Packet dropped, event logged to syslog
-
 → User receives connection timeout
-
 ```
 
-
-
-\### Example 3: DMZ trying to pivot to SERVER zone (blocked)
+### Example 3: DMZ trying to pivot to SERVER zone (blocked)
 
 ```
-
 DMZ LXC (192.168.30.50) → Attempts connection to 192.168.20.10:22
-
 → Floating Rule F02 evaluates FIRST (Quick=yes): DMZ → SERVER → BLOCK + LOG
-
 → Packet dropped immediately, never reaches per-interface rules
-
 → Event logged with "F02: Block DMZ->SERVER" in firewall log
-
 ```
 
-
-
-\### Example 4: External user accessing DMZ web server
+### Example 4: External user accessing DMZ web server
 
 ```
-
 Internet client → WAN IP (192.168.0.193:443)
-
 → Port forward rule: WAN:443 → 192.168.30.50:443
-
 → Associated WAN firewall rule: ALLOW TCP to 192.168.30.50:443
-
 → Traffic NAT'd and routed to DMZ nginx container
-
 → Nginx responds, return traffic follows stateful session back to client
-
 ```
 
+---
 
+## Future Enhancements
+
+1\. **IDS/IPS Integration:** Install Suricata or Snort on pfSense WAN and DMZ interfaces for threat detection
+
+2\. **VPN Access:** Deploy WireGuard/OpenVPN for secure remote access to management network
+
+3\. **High Availability:** Deploy second pfSense in CARP HA cluster for failover
+
+4\. **WAF:** Deploy ModSecurity or Cloudflare Tunnel in DMZ for application-layer protection
+
+5\. **Network Monitoring:** Integrate ntopng or Zabbix for bandwidth analysis and anomaly detection
+
+6\. **Certificate Management:** Deploy internal CA (Step-CA) for TLS certificate management
+
+7\. **Backup Automation:** Automated pfSense config backups to git repository
 
 ---
 
-
-
-\## Future Enhancements
-
-
-
-1\. \*\*IDS/IPS Integration:\*\* Install Suricata or Snort on pfSense WAN and DMZ interfaces for threat detection
-
-2\. \*\*VPN Access:\*\* Deploy WireGuard/OpenVPN for secure remote access to management network
-
-3\. \*\*High Availability:\*\* Deploy second pfSense in CARP HA cluster for failover
-
-4\. \*\*WAF:\*\* Deploy ModSecurity or Cloudflare Tunnel in DMZ for application-layer protection
-
-5\. \*\*Network Monitoring:\*\* Integrate ntopng or Zabbix for bandwidth analysis and anomaly detection
-
-6\. \*\*Certificate Management:\*\* Deploy internal CA (Step-CA) for TLS certificate management
-
-7\. \*\*Backup Automation:\*\* Automated pfSense config backups to git repository
-
-
-
----
-
-
-
-\## License
-
-
+## License
 
 This project documentation is released under MIT License.
 
-
-
 ---
 
-
-
-\## Author
-
-
+## Author
 
 Created as part of enterprise network security implementation project.
 
+**Repository:** [Your GitHub Username]/pfsense-proxmox-vlan-segmentation
 
-
-\*\*Repository:\*\* \[Your GitHub Username]/pfsense-proxmox-vlan-segmentation
-
-
-
-\*\*Last Updated:\*\* February 2025
+**Last Updated:** February 2025
 
