@@ -166,7 +166,8 @@ iface vmbr1 inet static
 
 | DMZ\_WEB            | Host    | 192.168.30.50                                 |
 
-![Screenshot: pfSense Firewall Aliases](screenshots/05-pfsense-aliases.png)
+![Screenshot: pfSense Firewall Aliases](screenshots/04.1-firewall-aliases-ip.png)
+![Screenshot: pfSense Firewall Aliases](screenshots/04.2-pfsense-aliases-ports.png)
 
 ---
 
@@ -206,9 +207,8 @@ iface vmbr1 inet static
 
 | 25       | TCP      | 192.168.30.60    | 25        | SMTP → mail  |
 
-![Screenshot: pfSense Outbound NAT](screenshots/06-pfsense-outbound-nat.png)
+![Screenshot: pfSense Outbound NAT](screenshots/05-pfsense-outbound-nat.png)
 
-![Screenshot: pfSense Port Forwards](screenshots/07-pfsense-port-forwards.png)
 
 ---
 
@@ -244,7 +244,7 @@ All rules have:
 
 - **Direction:** Any
 
-![Screenshot: pfSense Floating Rules](screenshots/08-pfsense-floating-rules.png)
+![Screenshot: pfSense Floating Rules](screenshots/06-pfsense-floating-rules.png)
 
 ---
 
@@ -284,7 +284,7 @@ All rules have:
 
 **Rules are processed top-to-bottom. Order matters.**
 
-![Screenshot: pfSense USER VLAN Rules](screenshots/09-pfsense-user-rules.png)
+![Screenshot: pfSense USER VLAN Rules](screenshots/07-pfsense-user-rules.png)
 
 ---
 
@@ -322,7 +322,7 @@ All rules have:
 
 | S07| BLOCK | any      | any              | any                      | any      | Default deny catch-all (LOG)                 |
 
-![Screenshot: pfSense SERVER VLAN Rules](screenshots/10-pfsense-server-rules.png)
+![Screenshot: pfSense SERVER VLAN Rules](screenshots/07.2-pfsense-server-rules.png)
 
 ---
 
@@ -362,7 +362,7 @@ All rules have:
 
 **Note:** Rules D04 and D05 are redundant with Floating rules F01 and F02, but included as defense-in-depth in case floating rules are accidentally disabled.
 
-![Screenshot: pfSense DMZ VLAN Rules](screenshots/11-pfsense-dmz-rules.png)
+![Screenshot: pfSense DMZ VLAN Rules](screenshots/07.3-pfsense-dmz-rules.png)
 
 ---
 
@@ -400,7 +400,7 @@ ip-ratelimit: 100
 
 - DNS amplification DDoS attacks
 
-![Screenshot: pfSense DNS Resolver Configuration](screenshots/12-pfsense-dns-resolver.png)
+![Screenshot: pfSense DNS Resolver Configuration](screenshots/8-pfsense-dns-resolver.png)
 
 ---
 
@@ -438,7 +438,7 @@ ip-ratelimit: 100
 
 - Compliance requirements (log retention)
 
-![Screenshot: pfSense Remote Syslog Configuration](screenshots/13-pfsense-remote-syslog.png)
+![Screenshot: pfSense Remote Syslog Configuration](screenshots/9-pfsense-remote-syslog.png)
 
 ---
 
@@ -476,62 +476,6 @@ nameserver: 192.168.10.1
 ![Screenshot: LXC Containers Running in VLANs](screenshots/15-proxmox-lxc-list.png)
 
 ---
-
-## 13. Network Connectivity Verification
-
-**Achievement:** Validated that VLAN segmentation, firewall rules, DNS resolution, and internet access are functioning as designed.
-
-**Test Results:**
-
-### USER VLAN (192.168.10.50) Tests:
-
-```bash
-# ✅ PASS: DNS resolution via pfSense
-dig @192.168.10.1 google.com
-# Result: status: NOERROR, ANSWER SECTION shows IP
-# ✅ PASS: Internet HTTP/HTTPS access
-curl -I https://google.com
-# Result: HTTP/2 200
-# ❌ BLOCKED: Access to SERVER zone
-ping 192.168.20.10
-# Result: 100% packet loss (blocked by U04)
-# ❌ BLOCKED: SSH to DMZ
-ssh 192.168.30.50
-# Result: Connection timeout (blocked by U06)
-```
-
-### SERVER VLAN Tests:
-
-```bash
-# ✅ PASS: Internet access for updates
-curl -I https://ubuntu.com
-# Result: HTTP/2 200
-# ❌ BLOCKED: Access to USER zone
-ping 192.168.10.50
-# Result: Blocked by S05
-```
-
-### DMZ VLAN Tests:
-
-```bash
-# ✅ PASS: Log shipping to SIEM
-logger -n 192.168.20.10 -P 514 "Test syslog message"
-# Result: Message received at syslog server
-# ❌ BLOCKED: Access to USER zone
-ping 192.168.10.50
-# Result: Blocked by F01 (floating rule)
-# ❌ BLOCKED: Access to SERVER zone
-ping 192.168.20.10
-# Result: Blocked by F02 (floating rule)
-```
-
-![Screenshot: USER VLAN Connectivity Test](screenshots/16-user-vlan-test.png)
-
-![Screenshot: Firewall Logs Showing Blocked Traffic](screenshots/17-pfsense-firewall-logs.png)
-
----
-
-## Security Architecture Summary
 
 ### What We Achieved:
 
