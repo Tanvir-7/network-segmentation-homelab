@@ -104,8 +104,6 @@ iface vmbr1 inet static
 
 ![Screenshot: pfSense VLAN Configuration](screenshots/02-pfsense-vlan-creation.png)
 
-![Screenshot: pfSense Interface Assignments](screenshots/03-pfsense-interface-assignments.png)
-
 ---
 
 ## 3. DHCP Server per VLAN
@@ -132,7 +130,9 @@ iface vmbr1 inet static
 
 | 30   | 192.168.30.100 | 192.168.30.150 | 192.168.30.1  | 192.168.30.1  |
 
-![Screenshot: pfSense DHCP Server Configuration](screenshots/04-pfsense-dhcp-server.png)
+![Screenshot: pfSense DHCP Server Configuration](screenshots/03.1-dhcp-server-User.png)
+![Screenshot: pfSense DHCP Server Configuration](screenshots/03.2-dhcp-server.Server.png)
+![Screenshot: pfSense DHCP Server Configuration](screenshots/03.3-dhcp-server.DMZ.png)
 
 ---
 
