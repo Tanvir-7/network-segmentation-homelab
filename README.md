@@ -471,9 +471,11 @@ net0: name=eth0,bridge=vmbr1,tag=10,ip=192.168.10.50/24,gw=192.168.10.1,firewall
 nameserver: 192.168.10.1
 ```
 
-![Screenshot: Proxmox LXC Network Configuration](screenshots/14-proxmox-lxc-network-config.png)
+![Screenshot: Proxmox LXC Network Configuration](screenshots/10.1-lxc-user-network.png)
 
-![Screenshot: LXC Containers Running in VLANs](screenshots/15-proxmox-lxc-list.png)
+![Screenshot: Proxmox LXC Network Configuration](screenshots/10.2-lxc-server-network.png)
+
+![Screenshot: Proxmox LXC Network Configuration](screenshots/10.3-lxc-DMZ-network.png)
 
 ---
 
@@ -535,32 +537,9 @@ nameserver: 192.168.10.1
 
 - **Logging:** Centralized rsyslog/syslog-ng
 
----
 
-## File Structure for Screenshots
 
 ```
-screenshots/
-├── 01-proxmox-vmbr1-vlan-aware.png
-├── 02-pfsense-vlan-creation.png
-├── 03-pfsense-interface-assignments.png
-├── 04-pfsense-dhcp-server.png
-├── 05-pfsense-aliases.png
-├── 06-pfsense-outbound-nat.png
-├── 07-pfsense-port-forwards.png
-├── 08-pfsense-floating-rules.png
-├── 09-pfsense-user-rules.png
-├── 10-pfsense-server-rules.png
-├── 11-pfsense-dmz-rules.png
-├── 12-pfsense-dns-resolver.png
-├── 13-pfsense-remote-syslog.png
-├── 14-proxmox-lxc-network-config.png
-├── 15-proxmox-lxc-list.png
-├── 16-user-vlan-test.png
-└── 17-pfsense-firewall-logs.png
-```
-
----
 
 ## Network Traffic Flow Examples
 
