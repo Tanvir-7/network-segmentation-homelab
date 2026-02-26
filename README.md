@@ -458,11 +458,7 @@ ip-ratelimit: 100
 
 | lxc-monitor    | 20       | 192.168.20.20  | 192.168.20.1  | Prometheus/Grafana       |
 
-| lxc-db         | 20       | 192.168.20.50  | 192.168.20.1  | Database server          |
-
 | lxc-nginx      | 30       | 192.168.30.50  | 192.168.30.1  | Reverse proxy (public)   |
-
-| lxc-mail       | 30       | 192.168.30.60  | 192.168.30.1  | Mail relay (public)      |
 
 **Proxmox Network Configuration Example (lxc-user-01):**
 
