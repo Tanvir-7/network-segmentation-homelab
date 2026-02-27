@@ -135,7 +135,7 @@ iface vmbr1 inet static
 
 ![description](Screenshots/Network-Segmentation/03.2-dhcp%20server-server.png)
 
-![Screenshot: pfSense DHCP Server Configuration](screenshots/03.3-dhcp-server.DMZ.png)
+![description](Screenshots/Network-Segmentation/03.3-dhcp%20server-DMZ.png)
 
 ---
 
