@@ -169,7 +169,7 @@ iface vmbr1 inet static
 
 | DMZ\_WEB            | Host    | 192.168.30.50                                 |
 
-![Screenshot: pfSense Firewall Aliases](Screenshots/Network-Segmentation/04.1-firewall-alliases-ip.png)
+![description](Screenshots/Network-Segmentation/04.1-firewall-alliases-ip.png)
 
 ![Screenshot: pfSense Firewall Aliases](screenshots/04.2-pfsense-aliases-ports.png)
 
