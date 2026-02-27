@@ -404,7 +404,7 @@ ip-ratelimit: 100
 
 - DNS amplification DDoS attacks
 
-![Screenshot: pfSense DNS Resolver Configuration](screenshots/8-pfsense-dns-resolver.png)
+![Screenshot: pfSense DNS Resolver Configuration](Screenshots/Network-Segmentation/08.png)
 
 ---
 
