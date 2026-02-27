@@ -103,7 +103,7 @@ iface vmbr1 inet static
 
 <!-- [Screenshot: pfSense VLAN Configuration](screenshots/02-pfsense-vlan-creation.png) -->
 
-Screenshots/Network-Segmentation/02-pfsense-vlan-creation.png
+![Description](Screenshots/Network-Segmentation/02-pfsense-vlan-creation.png)
 
 ---
 
