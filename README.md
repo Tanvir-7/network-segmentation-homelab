@@ -442,7 +442,7 @@ ip-ratelimit: 100
 
 - Compliance requirements (log retention)
 
-![Screenshot: pfSense Remote Syslog Configuration](screenshots/9-pfsense-remote-syslog.png)
+![Screenshot: pfSense Remote Syslog Configuration](Screenshots/Network-Segmentation/09.png)
 
 ---
 
