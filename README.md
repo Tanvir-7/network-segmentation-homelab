@@ -326,7 +326,7 @@ All rules have:
 
 | S07| BLOCK | any      | any              | any                      | any      | Default deny catch-all (LOG)                 |
 
-![Screenshot: pfSense SERVER VLAN Rules](screenshots/07.2-pfsense-server-rules.png)
+![Screenshot: pfSense SERVER VLAN Rules](Screenshots/Network-Segmentation/07.2.png)
 
 ---
 
