@@ -580,7 +580,7 @@ Internet client → WAN IP (192.168.0.193:443)
 → Traffic NAT'd and routed to DMZ nginx container
 → Nginx responds, return traffic follows stateful session back to client
 ```
-
+```
 ---
 
 ## Future Enhancements
