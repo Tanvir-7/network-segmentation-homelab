@@ -366,7 +366,7 @@ All rules have:
 
 **Note:** Rules D04 and D05 are redundant with Floating rules F01 and F02, but included as defense-in-depth in case floating rules are accidentally disabled.
 
-![Screenshot: pfSense DMZ VLAN Rules](screenshots/07.3-pfsense-dmz-rules.png)
+![Screenshot: pfSense DMZ VLAN Rules](Screenshots/Network-Segmentation/07.3.png)
 
 ---
 
