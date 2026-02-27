@@ -131,8 +131,10 @@ iface vmbr1 inet static
 
 | 30   | 192.168.30.100 | 192.168.30.150 | 192.168.30.1  | 192.168.30.1  |
 
-![Screenshot: pfSense DHCP Server Configuration](Screenshots/Network-Segmentation/03.1-Dhcp server-User.png)
+![Description](Screenshots/Network-Segmentation/03.1-Dhcp server-User.png)
+
 ![Screenshot: pfSense DHCP Server Configuration](screenshots/03.2-dhcp-server.Server.png)
+
 ![Screenshot: pfSense DHCP Server Configuration](screenshots/03.3-dhcp-server.DMZ.png)
 
 ---
