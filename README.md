@@ -101,7 +101,7 @@ iface vmbr1 inet static
 
 | 30      | DMZ       | 192.168.30.1   | 192.168.30.0/24 | Public-facing services (web, mail) |
 
-![Screenshot: pfSense VLAN Configuration](screenshots/02-pfsense-vlan-creation.png)
+<!-- [Screenshot: pfSense VLAN Configuration](screenshots/02-pfsense-vlan-creation.png) -->
 
 ---
 
