@@ -471,11 +471,11 @@ net0: name=eth0,bridge=vmbr1,tag=10,ip=192.168.10.50/24,gw=192.168.10.1,firewall
 nameserver: 192.168.10.1
 ```
 
-![Screenshot: Proxmox LXC Network Configuration](screenshots/10.1-lxc-user-network.png)
+![Screenshot: Proxmox LXC Network Configuration](Screenshots/Network-Segmentation/10-lxc%20user.png)
 
-![Screenshot: Proxmox LXC Network Configuration](screenshots/10.2-lxc-server-network.png)
+![Screenshot: Proxmox LXC Network Configuration](Screenshots/Network-Segmentation/10.1-lxc%20server.png)
 
-![Screenshot: Proxmox LXC Network Configuration](screenshots/10.3-lxc-DMZ-network.png)
+![Screenshot: Proxmox LXC Network Configuration](Screenshots/Network-Segmentation/10.2-lxc%20DMZ.png)
 
 ---
 
