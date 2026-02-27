@@ -171,7 +171,7 @@ iface vmbr1 inet static
 
 ![description](Screenshots/Network-Segmentation/04.1-firewall-alliases-ip.png)
 
-![Screenshot: pfSense Firewall Aliases](screenshots/04.2-pfsense-aliases-ports.png)
+![description](Screenshots/Network-Segmentation/04.2-firewall-alliases-port.png)
 
 ---
 
