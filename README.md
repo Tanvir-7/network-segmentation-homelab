@@ -74,8 +74,7 @@ iface vmbr1 inet static
     bridge-vids   2-4094
 ```
 
-![Screenshot: Proxmox VLAN-Aware Bridge Configuration](screenshots/01-proxmox-vmbr1-vlan-aware.png)
-
+![Description](Screenshots/Network-Segmentation/01-proxmox-vmbr1-vlan-aware.png)
 ---
 
 ## 2. pfSense VLAN Sub-Interfaces
