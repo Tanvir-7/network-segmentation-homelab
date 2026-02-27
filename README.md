@@ -211,7 +211,7 @@ iface vmbr1 inet static
 
 | 25       | TCP      | 192.168.30.60    | 25        | SMTP → mail  |
 
-![Screenshot: pfSense Outbound NAT](screenshots/05-pfsense-outbound-nat.png)
+![NAT](Screenshots/Network-Segmentation/05-Nat.png)
 
 
 ---
