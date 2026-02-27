@@ -288,7 +288,7 @@ All rules have:
 
 **Rules are processed top-to-bottom. Order matters.**
 
-![Screenshot: pfSense USER VLAN Rules](screenshots/07-pfsense-user-rules.png)
+![Screenshot: pfSense USER VLAN Rules](Screenshots/Network-Segmentation/07.1.png)
 
 ---
 
