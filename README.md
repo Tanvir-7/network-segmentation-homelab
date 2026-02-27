@@ -248,7 +248,7 @@ All rules have:
 
 - **Direction:** Any
 
-![Screenshot: pfSense Floating Rules](screenshots/06-pfsense-floating-rules.png)
+![Floating Rules](Screenshots/Network-Segmentation/06.png)
 
 ---
 
