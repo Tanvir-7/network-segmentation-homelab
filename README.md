@@ -479,7 +479,7 @@ nameserver: 192.168.10.1
 
 ---
 
-### What We Achieved:
+### What I Achieved:
 
 #### 1. **Zero Trust Network Segmentation**
 
