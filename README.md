@@ -611,7 +611,7 @@ This project documentation is released under MIT License.
 
 Created as part of enterprise network security implementation project.
 
-**Repository:** [Your GitHub Username]/pfsense-proxmox-vlan-segmentation
+**Repository:** Tanvir-7/pfsense-proxmox-vlan-segmentation
 
 **Last Updated:** February 2025
 
